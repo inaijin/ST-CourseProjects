@@ -10,8 +10,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TableTest {
     private User user;
@@ -53,6 +52,49 @@ public class TableTest {
                 "First reservation should match the first added reservation.");
         assertEquals(reservation2, table.getReservations().get(1),
                 "Second reservation should match the second added reservation.");
+    }
+
+    @Test
+    @DisplayName("Test Is Reserved - Exact Reservation Time")
+    void shouldReturnTrueWhenCheckingAtExactReservationTime() {
+        table.addReservation(reservation);
+        assertTrue(table.isReserved(LocalDateTime.parse("2024-11-01T13:00")),
+                "Table should be reserved at the exact reservation time.");
+    }
+
+    @Test
+    @DisplayName("Test Is Reserved - Just Before Reservation Time")
+    void shouldReturnFalseWhenCheckingJustBeforeReservationTime() {
+        table.addReservation(reservation);
+        LocalDateTime justBefore = LocalDateTime.parse("2024-11-01T12:59:59");
+        assertFalse(table.isReserved(justBefore),
+                "Table should not be reserved just before the reservation time.");
+    }
+
+    @Test
+    @DisplayName("Test Add Reservation - Large Number of Reservations")
+    void shouldHandleLargeNumberOfReservations() {
+        int largeNumber = 1000;
+        for (int i = 0; i < largeNumber; i++) {
+            Reservation res = new Reservation(user, restaurant, table, LocalDateTime.now().plusMinutes(i));
+            table.addReservation(res);
+        }
+
+        assertEquals(largeNumber, table.getReservations().size(),
+                () -> "Table should handle adding " + largeNumber + " reservations.");
+    }
+
+    @Test
+    @DisplayName("Test Add Reservation - Adding Overlapping Reservations")
+    void shouldAllowAddingOverlappingReservations() {
+        Reservation overlappingReservation = new Reservation(user, restaurant, table, LocalDateTime.parse("2024-11-01T13:00"));
+        table.addReservation(reservation);
+        table.addReservation(overlappingReservation);
+
+        assertEquals(2, table.getReservations().size(),
+                "Table should allow adding overlapping reservations.");
+        assertTrue(table.isReserved(LocalDateTime.parse("2024-11-01T13:00")),
+                "Table should be reserved at the overlapping reservation time.");
     }
 
     @ParameterizedTest

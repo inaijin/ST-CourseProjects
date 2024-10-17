@@ -113,6 +113,23 @@ public class RestaurantTest {
     }
 
     @Test
+    @DisplayName("Test Add Table - Adding Duplicate Tables Should Assign Unique Table Numbers")
+    void shouldAssignUniqueTableNumbersWhenAddingDuplicateTables() {
+        Table duplicateTable1 = new Table(1, restaurant.getId(), 4);
+        Table duplicateTable2 = new Table(1, restaurant.getId(), 4);
+
+        restaurant.addTable(duplicateTable1);
+        restaurant.addTable(duplicateTable2);
+
+        assertEquals(1, duplicateTable1.getTableNumber(),
+                "First duplicate table should have table number 1.");
+        assertEquals(2, duplicateTable2.getTableNumber(),
+                "Second duplicate table should have table number 2.");
+        assertEquals(2, restaurant.getTables().size(),
+                "Restaurant should have two tables.");
+    }
+
+    @Test
     @DisplayName("Test Add Reviews - One Reviews to Restaurant")
     void testAddReviews() {
         restaurant.addReview(review1);
@@ -121,7 +138,6 @@ public class RestaurantTest {
         assertEquals(review1, restaurant.getReviews().getFirst(), "First review should have been selected.");
     }
 
-    // Logic Of Writing Reviews
     @Test
     @DisplayName("Test Add Reviews - Two Reviews by Different People to Restaurant")
     void testAddMultipleDifferentReviews() {

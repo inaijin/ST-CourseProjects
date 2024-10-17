@@ -46,7 +46,6 @@ public class UserTest {
         assertEquals(0, reservation.getReservationNumber(), "The reservation number should be 0.");
     }
 
-    // Reservation Num For A User Is Not Static ???
     @Test
     @DisplayName("Test Add Multiple Reservations")
     void testAddMultipleReservations() {
@@ -58,6 +57,13 @@ public class UserTest {
         assertEquals(2, user.getReservations().size(), "User should have two reservations.");
         assertEquals(0, reservation.getReservationNumber(), "The first reservation number should be 0.");
         assertEquals(1, reservation2.getReservationNumber(), "The second reservation number should be 1.");
+    }
+
+    @Test
+    @DisplayName("Test Adding Null Reservation")
+    void shouldThrowExceptionWhenAddingNullReservation() {
+        assertThrows(NullPointerException.class, () -> user.addReservation(null),
+                "Adding a null reservation should throw NullPointerException.");
     }
 
     @Test
@@ -74,7 +80,6 @@ public class UserTest {
         assertFalse(user.checkReserved(restaurant), "User should not have a reservation for this restaurant.");
     }
 
-    // Cannot Reserve A Restaurant For The Future ???
     @Test
     @DisplayName("Test Check Reserved - Future Reservation Not Valid")
     void testCheckReserved_FutureReservation() {
@@ -102,6 +107,13 @@ public class UserTest {
         user.addReservation(otherRestaurantReservation);
 
         assertFalse(user.checkReserved(restaurant), "Reservation for a different restaurant should not be valid.");
+    }
+
+    @Test
+    @DisplayName("Test Check Reserved with Null Restaurant")
+    void shouldReturnFalseWhenRestaurantIsNull() {
+        user.addReservation(reservation);
+        assertFalse(user.checkReserved(null), "Checking reserved with null restaurant should return false.");
     }
 
     @Test
@@ -157,6 +169,20 @@ public class UserTest {
         assertNull(found, "Canceled reservation should not be found.");
     }
 
+    @Test
+    @DisplayName("Test Get Reservation with Negative Number")
+    void shouldReturnNullWhenReservationNumberIsNegative() {
+        user.addReservation(reservation);
+        Reservation found = user.getReservation(-1);
+        assertNull(found, "Retrieving with a negative reservation number should return null.");
+    }
+
+    @Test
+    @DisplayName("Test Check Password with Null Input")
+    void shouldReturnFalseWhenPasswordIsNull() {
+        assertFalse(user.checkPassword(null), "Checking password with null input should return false.");
+    }
+
     @ParameterizedTest
     @CsvSource({
             "123, true",
@@ -166,4 +192,5 @@ public class UserTest {
     void testCheckPassword(String inputPassword, boolean expectedResult) {
         assertEquals(expectedResult, user.checkPassword(inputPassword), "Password check result should match.");
     }
+
 }
