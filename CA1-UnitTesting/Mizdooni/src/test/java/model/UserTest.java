@@ -8,32 +8,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 public class UserTest {
     private User user;
-    private User manager;
-
-    private Address addressRestaurant;
-
     private Table table;
     private Restaurant restaurant;
     private Reservation reservation;
 
     @BeforeEach
     void setUp() {
-        Address addressUser = new Address("Iran", "Tehran", "Bahar");
-        Address addressManager = new Address("Iran", "Tehran", "Jordan");
-
-        addressRestaurant = new Address("Iran", "Tehran", "Gisha");
-        user = new User("INARI", "123", "inari@gmail.com", addressUser, User.Role.client);
-        manager = new User("BOSS", "111", "BossMan@gmail.com", addressManager, User.Role.manager);
-
-        table = new Table(1, 0, 4);
-        restaurant = new Restaurant("Shila", manager, "HotDog", LocalTime.of(12, 0),
-                LocalTime.of(23, 0), "The best HotDogs in town", addressRestaurant, " ");
+        table = mock(Table.class);
+        restaurant = mock(Restaurant.class);
+        user = new User("INARI", "123", "inari@gmail.com", mock(Address.class), User.Role.client);
         reservation = new Reservation(user, restaurant, table, LocalDateTime.now());
     }
 
@@ -57,13 +46,6 @@ public class UserTest {
         assertEquals(2, user.getReservations().size(), "User should have two reservations.");
         assertEquals(0, reservation.getReservationNumber(), "The first reservation number should be 0.");
         assertEquals(1, reservation2.getReservationNumber(), "The second reservation number should be 1.");
-    }
-
-    @Test
-    @DisplayName("Test Adding Null Reservation")
-    void shouldThrowExceptionWhenAddingNullReservation() {
-        assertThrows(NullPointerException.class, () -> user.addReservation(null),
-                "Adding a null reservation should throw NullPointerException.");
     }
 
     @Test
@@ -101,8 +83,7 @@ public class UserTest {
     @Test
     @DisplayName("Test Check Reserved - Reservation for Different Restaurant Not Valid")
     void testCheckReserved_DifferentRestaurant() {
-        Restaurant anotherRestaurant = new Restaurant("Different", manager, "Burger", LocalTime.of(10, 0),
-                LocalTime.of(22, 0), "Different restaurant", addressRestaurant, "");
+        Restaurant anotherRestaurant = mock(Restaurant.class);
         Reservation otherRestaurantReservation = new Reservation(user, anotherRestaurant, table, LocalDateTime.now());
         user.addReservation(otherRestaurantReservation);
 

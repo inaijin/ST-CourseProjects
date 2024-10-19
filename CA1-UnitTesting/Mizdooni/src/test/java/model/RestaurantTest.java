@@ -12,40 +12,32 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class RestaurantTest {
-
+    private Restaurant restaurant;
     private User user;
     private User manager;
     private Table table1, table2;
-    private Restaurant restaurant;
-    private Review review1, review2;
+    private Review review;
 
     @BeforeEach
     void setUp() {
-        Address address = new Address("Iran", "Tehran", "Jordan");
-        user = new User("INARI", "123", "inari@gmail.com", address, User.Role.client);
-        manager = new User("Manager1", "pass123", "manager1@gmail.com", address, User.Role.manager);
+        user = mock(User.class);
+        manager = mock(User.class);
         restaurant = new Restaurant("Shila", manager, "Fast Food", LocalTime.of(12, 0),
-                LocalTime.of(22, 0), "Best food!", address, " ");
+                LocalTime.of(22, 0), "Best food!", mock(Address.class), " ");
 
-        table1 = new Table(11, restaurant.getId(), 4);
-        table2 = new Table(22, restaurant.getId(), 6);
+        table1 = mock(Table.class);
+        table2 = mock(Table.class);
 
-        Rating rating1 = new Rating();
-        rating1.food = 4.2;
-        rating1.service = 3;
-        rating1.ambiance = 4.5;
-        rating1.overall = 4;
+        when(table1.getTableNumber()).thenReturn(1);
+        when(table2.getTableNumber()).thenReturn(2);
+        when(table1.getSeatsNumber()).thenReturn(4);
+        when(table2.getSeatsNumber()).thenReturn(6);
 
-        Rating rating2 = new Rating();
-        rating2.food = 5;
-        rating2.service = 4;
-        rating2.ambiance = 3;
-        rating2.overall = 4.5;
-
-        review1 = new Review(user, rating1, "Not Bad !", LocalDateTime.now());
-        review2 = new Review(user, rating2, "Amazing But Not A Good Location", LocalDateTime.now());
+        review = mock(Review.class);
+        when(review.getUser()).thenReturn(user);
     }
 
     @Test
@@ -93,80 +85,76 @@ public class RestaurantTest {
     @Test
     @DisplayName("Test AddTable - Add One Table to Restaurant with Table Number Update")
     void testAddTableWithNumberUpdate() {
-        assertEquals(11, table1.getTableNumber(), "Original Table Number.");
-
         restaurant.addTable(table1);
-        assertEquals(1, table1.getTableNumber(), "Table number should be updated to 1 after being added.");
+        verify(table1).setTableNumber(1);
     }
 
     @Test
     @DisplayName("Test AddTable - Add Multiple Tables to Restaurant with Table Number Update")
     void testAddMultipleTablesWithNumberUpdate() {
-        assertEquals(11, table1.getTableNumber(), "Original Table Number.");
-        assertEquals(22, table2.getTableNumber(), "Original Table Number.");
-
         restaurant.addTable(table1);
         restaurant.addTable(table2);
 
-        assertEquals(1, table1.getTableNumber(), "First table number should be updated to 1.");
-        assertEquals(2, table2.getTableNumber(), "Second table number should be updated to 2.");
+        verify(table1).setTableNumber(1);
+        verify(table2).setTableNumber(2);
     }
 
     @Test
     @DisplayName("Test Add Table - Adding Duplicate Tables Should Assign Unique Table Numbers")
     void shouldAssignUniqueTableNumbersWhenAddingDuplicateTables() {
-        Table duplicateTable1 = new Table(1, restaurant.getId(), 4);
-        Table duplicateTable2 = new Table(1, restaurant.getId(), 4);
+        Table duplicateTable1 = mock(Table.class);
+        Table duplicateTable2 = mock(Table.class);
 
         restaurant.addTable(duplicateTable1);
         restaurant.addTable(duplicateTable2);
 
-        assertEquals(1, duplicateTable1.getTableNumber(),
-                "First duplicate table should have table number 1.");
-        assertEquals(2, duplicateTable2.getTableNumber(),
-                "Second duplicate table should have table number 2.");
-        assertEquals(2, restaurant.getTables().size(),
-                "Restaurant should have two tables.");
+        verify(duplicateTable1).setTableNumber(1);
+        verify(duplicateTable2).setTableNumber(2);
+        assertEquals(2, restaurant.getTables().size(), "Restaurant should have two tables.");
     }
 
     @Test
-    @DisplayName("Test Add Reviews - One Reviews to Restaurant")
+    @DisplayName("Test Add Reviews - One Review to Restaurant")
     void testAddReviews() {
-        restaurant.addReview(review1);
+        restaurant.addReview(review);
 
         assertEquals(1, restaurant.getReviews().size(), "Restaurant should have one review.");
-        assertEquals(review1, restaurant.getReviews().getFirst(), "First review should have been selected.");
+        assertEquals(review, restaurant.getReviews().getFirst(), "First review should have been selected.");
     }
 
     @Test
     @DisplayName("Test Add Reviews - Two Reviews by Different People to Restaurant")
     void testAddMultipleDifferentReviews() {
-        restaurant.addReview(review1);
+        restaurant.addReview(review);
 
-        Review reviewNew = new Review(manager, new Rating(), "Good", LocalDateTime.now());
+        Review reviewNew = new Review(manager, mock(Rating.class), "Good", LocalDateTime.now());
         restaurant.addReview(reviewNew);
 
         List<Review> reviews = restaurant.getReviews();
         assertEquals(2, reviews.size(), "Restaurant should have two reviews.");
-        assertEquals(review1, reviews.getFirst(), "First review should have been selected.");
+        assertEquals(review, reviews.get(0), "First review should have been selected.");
         assertEquals(reviewNew, reviews.get(1), "New review should have been selected.");
     }
 
     @Test
     @DisplayName("Test Add Reviews - Two Reviews by Same Person to Restaurant")
     void testAddMultipleSameReviews() {
-        restaurant.addReview(review1);
+        Review review2 = mock(Review.class);
+        when(review2.getUser()).thenReturn(user);
+
+        restaurant.addReview(review);
         restaurant.addReview(review2);
 
         List<Review> reviews = restaurant.getReviews();
-        assertEquals(1, reviews.size(), "Restaurant should have two reviews.");
-        assertEquals(review2, reviews.getFirst(), "First review should have been override.");
+        assertEquals(1, reviews.size(), "Restaurant should have only one review (override case).");
+        assertEquals(review2, reviews.getFirst(), "Second review should have overridden the first.");
     }
 
     @ParameterizedTest
     @CsvSource({
             "5.0, 4.5, 4.5, 5.0, 4.5, 4.0, 4.5, 4.5",
-            "4.0, 3.5, 4.5, 4.0, 4.0, 3.5, 4.5, 4.0"
+            "4.0, 3.5, 4.5, 4.0, 4.0, 3.5, 4.5, 4.0",
+            "3.1, 4.2, 2.1, 3.8, 4.2, 5, 3.9, 4.32"
     })
     @DisplayName("Test Calculate Average Rating - Multiple Reviews")
     void testCalculateAverageRating(double food1, double service1, double ambiance1, double overall1,
@@ -185,7 +173,6 @@ public class RestaurantTest {
 
         Review review1 = new Review(user, rating1, "Review 1", LocalDateTime.now());
         Review review2 = new Review(manager, rating2, "Review 2", LocalDateTime.now());
-
         restaurant.addReview(review1);
         restaurant.addReview(review2);
 

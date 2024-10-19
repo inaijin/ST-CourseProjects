@@ -1,6 +1,9 @@
 package model;
 
-import mizdooni.model.*;
+import mizdooni.model.Reservation;
+import mizdooni.model.Restaurant;
+import mizdooni.model.Table;
+import mizdooni.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,9 +11,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
 
 public class TableTest {
     private User user;
@@ -20,11 +23,8 @@ public class TableTest {
 
     @BeforeEach
     void setUp() {
-        user = new User("INARI", "123", "inari@gmail.com", new Address("Iran",
-                "Tehran", "Bahar"), User.Role.client);
-        restaurant = new Restaurant("Shila", user, "HotDog", LocalTime.of(12, 0),
-                LocalTime.of(23, 0), "Best HotDogs",
-                new Address("Iran", "Tehran", "Gisha"), " ");
+        user = mock(User.class);
+        restaurant = mock(Restaurant.class);
         table = new Table(1, 0, 4);
         reservation = new Reservation(user, restaurant, table, LocalDateTime.parse("2024-11-01T13:00"));
     }
@@ -66,6 +66,7 @@ public class TableTest {
     @DisplayName("Test Is Reserved - Just Before Reservation Time")
     void shouldReturnFalseWhenCheckingJustBeforeReservationTime() {
         table.addReservation(reservation);
+
         LocalDateTime justBefore = LocalDateTime.parse("2024-11-01T12:59:59");
         assertFalse(table.isReserved(justBefore),
                 "Table should not be reserved just before the reservation time.");
@@ -99,13 +100,15 @@ public class TableTest {
 
     @ParameterizedTest
     @CsvSource({
-            "2024-11-01T13:00, false",
+            "2024-11-01T13:00, true",
+            "2024-11-02T12:30, false",
             "2024-11-01T12:00, true"
     })
     @DisplayName("Test Is Reserved")
     void testIsReserved(String reservationTime, boolean expectedResult) {
-        reservation = new Reservation(user, restaurant, table, LocalDateTime.parse("2024-11-01T12:00"));
+        Reservation reservation2 = new Reservation(user, restaurant, table, LocalDateTime.parse("2024-11-01T12:00"));
         table.addReservation(reservation);
+        table.addReservation(reservation2);
 
         assertEquals(expectedResult, table.isReserved(LocalDateTime.parse(reservationTime)),
                 "Reservation status should match expected result.");
@@ -120,4 +123,5 @@ public class TableTest {
         assertFalse(table.isReserved(LocalDateTime.parse("2024-11-01T13:00")),
                 "Table should not be reserved if reservation is canceled.");
     }
+
 }
