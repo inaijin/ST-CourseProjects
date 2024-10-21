@@ -23,7 +23,7 @@ public class UserTest {
         table = mock(Table.class);
         restaurant = mock(Restaurant.class);
         user = new User("INARI", "123", "inari@gmail.com", mock(Address.class), User.Role.client);
-        reservation = new Reservation(user, restaurant, table, LocalDateTime.now());
+        reservation = new Reservation(user, restaurant, table, LocalDateTime.now().minusMinutes(1));
     }
 
     @Test
