@@ -6,6 +6,7 @@ import mizdooni.model.Address;
 import mizdooni.model.User;
 import mizdooni.response.Response;
 import mizdooni.response.ResponseException;
+import mizdooni.service.ServiceUtils;
 import mizdooni.service.UserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 
@@ -297,93 +299,105 @@ public class AuthenticationControllerTest {
         assertEquals("no user logged in", exception.getMessage());
     }
 
-//    @Test
-//    @DisplayName("Test invalid username format")
-//    public void testInvalidUsernameFormat() {
-//        String invalidUsername = "invalid username";
-//
-//        when(ServiceUtils.validateUsername(invalidUsername)).thenReturn(false);
-//
-//        ResponseException exception = assertThrows(ResponseException.class, () -> {
-//            authenticationController.validateUsername(invalidUsername);
-//        });
-//
-//        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-//        assertEquals("invalid username format", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Test username already exists")
-//    public void testUsernameAlreadyExists() {
-//        String existingUsername = "existingUser";
-//
-//        when(ServiceUtils.validateUsername(existingUsername)).thenReturn(true);
-//        when(userService.usernameExists(existingUsername)).thenReturn(true);
-//
-//        ResponseException exception = assertThrows(ResponseException.class, () -> {
-//            authenticationController.validateUsername(existingUsername);
-//        });
-//
-//        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-//        assertEquals("username already exists", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Test username is available")
-//    public void testUsernameIsAvailable() throws Exception {
-//        String newUsername = "newUser";
-//
-//        when(ServiceUtils.validateUsername(newUsername)).thenReturn(true);
-//        when(userService.usernameExists(newUsername)).thenReturn(false);
-//
-//        Response response = authenticationController.validateUsername(newUsername);
-//        Response expectedResponse = Response.ok("username is available");
-//
-//        assertResponseMatches(expectedResponse, response);
-//    }
-//
-//    @Test
-//    @DisplayName("Test invalid email format")
-//    public void testInvalidEmailFormat() {
-//        String invalidEmail = "invalid.email@";
-//
-//        when(ServiceUtils.validateEmail(invalidEmail)).thenReturn(false);
-//
-//        ResponseException exception = assertThrows(ResponseException.class, () -> {
-//            authenticationController.validateEmail(invalidEmail);
-//        });
-//
-//        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-//        assertEquals("invalid email format", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Test email already registered")
-//    public void testEmailAlreadyRegistered() {
-//        String registeredEmail = "registered@example.com";
-//
-//        when(ServiceUtils.validateEmail(registeredEmail)).thenReturn(true);
-//        when(userService.emailExists(registeredEmail)).thenReturn(true);
-//
-//        ResponseException exception = assertThrows(ResponseException.class, () -> {
-//            authenticationController.validateEmail(registeredEmail);
-//        });
-//
-//        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-//        assertEquals("email already registered", exception.getMessage());
-//    }
-//
-//    @Test
-//    @DisplayName("Test email not registered")
-//    public void testEmailNotRegistered() throws Exception {
-//        String newEmail = "newuser@example.com";
-//
-//        when(ServiceUtils.validateEmail(newEmail)).thenReturn(true);
-//        when(userService.emailExists(newEmail)).thenReturn(false);
-//
-//        Response response = authenticationController.validateEmail(newEmail);
-//        Response expectedResponse = Response.ok("email not registered");
-//
-//        assertResponseMatches(expectedResponse, response);
-//    }
+    @Test
+    @DisplayName("Test invalid username format")
+    public void testInvalidUsernameFormat() {
+        String invalidUsername = "invalid username";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(invalidUsername)).thenReturn(false);
+
+            ResponseException exception = assertThrows(ResponseException.class, () -> {
+                authenticationController.validateUsername(invalidUsername);
+            });
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+            assertEquals("invalid username format", exception.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Test username already exists")
+    public void testUsernameAlreadyExists() {
+        String existingUsername = "existingUser";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(existingUsername)).thenReturn(true);
+            when(userService.usernameExists(existingUsername)).thenReturn(true);
+
+            ResponseException exception = assertThrows(ResponseException.class, () -> {
+                authenticationController.validateUsername(existingUsername);
+            });
+
+            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+            assertEquals("username already exists", exception.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Test username is available")
+    public void testUsernameIsAvailable() throws Exception {
+        String newUsername = "newUser";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(newUsername)).thenReturn(true);
+            when(userService.usernameExists(newUsername)).thenReturn(false);
+
+            Response response = authenticationController.validateUsername(newUsername);
+            Response expectedResponse = Response.ok("username is available");
+
+            assertResponseMatches(expectedResponse, response);
+        }
+    }
+
+    @Test
+    @DisplayName("Test invalid email format")
+    public void testInvalidEmailFormat() {
+        String invalidEmail = "invalid.email@";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(invalidEmail)).thenReturn(false);
+
+            ResponseException exception = assertThrows(ResponseException.class, () -> {
+                authenticationController.validateEmail(invalidEmail);
+            });
+
+            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+            assertEquals("invalid email format", exception.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Test email already registered")
+    public void testEmailAlreadyRegistered() {
+        String registeredEmail = "registered@example.com";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(registeredEmail)).thenReturn(true);
+            when(userService.emailExists(registeredEmail)).thenReturn(true);
+
+            ResponseException exception = assertThrows(ResponseException.class, () -> {
+                authenticationController.validateEmail(registeredEmail);
+            });
+
+            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+            assertEquals("email already registered", exception.getMessage());
+        }
+    }
+
+    @Test
+    @DisplayName("Test email not registered")
+    public void testEmailNotRegistered() throws Exception {
+        String newEmail = "newuser@example.com";
+
+        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
+            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(newEmail)).thenReturn(true);
+            when(userService.emailExists(newEmail)).thenReturn(false);
+
+            Response response = authenticationController.validateEmail(newEmail);
+            Response expectedResponse = Response.ok("email not registered");
+
+            assertResponseMatches(expectedResponse, response);
+        }
+    }
 }
