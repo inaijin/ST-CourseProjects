@@ -33,26 +33,30 @@ public class AuthenticationControllerTest {
 
     @InjectMocks
     private AuthenticationController authenticationController;
+
     private AutoCloseable mocks;
+    private MockedStatic<ServiceUtils> mockedServiceUtils;
 
     @BeforeEach
     public void setup() {
         mocks = MockitoAnnotations.openMocks(this);
+        mockedServiceUtils = mockStatic(ServiceUtils.class);
     }
 
     @AfterEach
     public void closeMocks() throws Exception {
         mocks.close();
+        mockedServiceUtils.close();
     }
 
-    // Reflection utility to access private fields used for response
     private Object getField(Object object, String fieldName) throws Exception {
         Field field = object.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
-        return field.get(object);
+        Object receivedObj = field.get(object);
+        field.setAccessible(false);
+        return receivedObj;
     }
 
-    // Custom assertion method for comparing Response objects
     private void assertResponseMatches(Response expectedResponse, Response actualResponse) throws Exception {
         assertEquals(getField(expectedResponse, "status"), getField(actualResponse, "status"),
                 "Status field did not match!");
@@ -304,16 +308,14 @@ public class AuthenticationControllerTest {
     public void testInvalidUsernameFormat() {
         String invalidUsername = "invalid username";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(invalidUsername)).thenReturn(false);
+        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(invalidUsername)).thenReturn(false);
 
-            ResponseException exception = assertThrows(ResponseException.class, () -> {
-                authenticationController.validateUsername(invalidUsername);
-            });
+        ResponseException exception = assertThrows(ResponseException.class, () -> {
+            authenticationController.validateUsername(invalidUsername);
+        });
 
-            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-            assertEquals("invalid username format", exception.getMessage());
-        }
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("invalid username format", exception.getMessage());
     }
 
     @Test
@@ -321,17 +323,15 @@ public class AuthenticationControllerTest {
     public void testUsernameAlreadyExists() {
         String existingUsername = "existingUser";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(existingUsername)).thenReturn(true);
-            when(userService.usernameExists(existingUsername)).thenReturn(true);
+        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(existingUsername)).thenReturn(true);
+        when(userService.usernameExists(existingUsername)).thenReturn(true);
 
-            ResponseException exception = assertThrows(ResponseException.class, () -> {
-                authenticationController.validateUsername(existingUsername);
-            });
+        ResponseException exception = assertThrows(ResponseException.class, () -> {
+            authenticationController.validateUsername(existingUsername);
+        });
 
-            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-            assertEquals("username already exists", exception.getMessage());
-        }
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("username already exists", exception.getMessage());
     }
 
     @Test
@@ -339,15 +339,13 @@ public class AuthenticationControllerTest {
     public void testUsernameIsAvailable() throws Exception {
         String newUsername = "newUser";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateUsername(newUsername)).thenReturn(true);
-            when(userService.usernameExists(newUsername)).thenReturn(false);
+        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(newUsername)).thenReturn(true);
+        when(userService.usernameExists(newUsername)).thenReturn(false);
 
-            Response response = authenticationController.validateUsername(newUsername);
-            Response expectedResponse = Response.ok("username is available");
+        Response response = authenticationController.validateUsername(newUsername);
+        Response expectedResponse = Response.ok("username is available");
 
-            assertResponseMatches(expectedResponse, response);
-        }
+        assertResponseMatches(expectedResponse, response);
     }
 
     @Test
@@ -355,16 +353,14 @@ public class AuthenticationControllerTest {
     public void testInvalidEmailFormat() {
         String invalidEmail = "invalid.email@";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(invalidEmail)).thenReturn(false);
+        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(invalidEmail)).thenReturn(false);
 
-            ResponseException exception = assertThrows(ResponseException.class, () -> {
-                authenticationController.validateEmail(invalidEmail);
-            });
+        ResponseException exception = assertThrows(ResponseException.class, () -> {
+            authenticationController.validateEmail(invalidEmail);
+        });
 
-            assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-            assertEquals("invalid email format", exception.getMessage());
-        }
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("invalid email format", exception.getMessage());
     }
 
     @Test
@@ -372,17 +368,15 @@ public class AuthenticationControllerTest {
     public void testEmailAlreadyRegistered() {
         String registeredEmail = "registered@example.com";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(registeredEmail)).thenReturn(true);
-            when(userService.emailExists(registeredEmail)).thenReturn(true);
+        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(registeredEmail)).thenReturn(true);
+        when(userService.emailExists(registeredEmail)).thenReturn(true);
 
-            ResponseException exception = assertThrows(ResponseException.class, () -> {
-                authenticationController.validateEmail(registeredEmail);
-            });
+        ResponseException exception = assertThrows(ResponseException.class, () -> {
+            authenticationController.validateEmail(registeredEmail);
+        });
 
-            assertEquals(HttpStatus.CONFLICT, exception.getStatus());
-            assertEquals("email already registered", exception.getMessage());
-        }
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+        assertEquals("email already registered", exception.getMessage());
     }
 
     @Test
@@ -390,14 +384,12 @@ public class AuthenticationControllerTest {
     public void testEmailNotRegistered() throws Exception {
         String newEmail = "newuser@example.com";
 
-        try (MockedStatic<ServiceUtils> mockedServiceUtils = mockStatic(ServiceUtils.class)) {
-            mockedServiceUtils.when(() -> ServiceUtils.validateEmail(newEmail)).thenReturn(true);
-            when(userService.emailExists(newEmail)).thenReturn(false);
+        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(newEmail)).thenReturn(true);
+        when(userService.emailExists(newEmail)).thenReturn(false);
 
-            Response response = authenticationController.validateEmail(newEmail);
-            Response expectedResponse = Response.ok("email not registered");
+        Response response = authenticationController.validateEmail(newEmail);
+        Response expectedResponse = Response.ok("email not registered");
 
-            assertResponseMatches(expectedResponse, response);
-        }
+        assertResponseMatches(expectedResponse, response);
     }
 }
