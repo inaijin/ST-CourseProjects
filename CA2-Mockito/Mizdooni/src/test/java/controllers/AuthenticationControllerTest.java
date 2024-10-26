@@ -27,7 +27,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class AuthenticationControllerTest {
-
     @Mock
     private UserService userService;
 

@@ -33,10 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 public class ReservationControllerTest {
-
-    @Mock
-    private RestaurantService restaurantService;
-
     @Mock
     private ReservationService reservationService;
 

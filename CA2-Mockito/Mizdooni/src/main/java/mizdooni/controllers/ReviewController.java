@@ -18,7 +18,7 @@ import static mizdooni.controllers.ControllerUtils.PARAMS_BAD_TYPE;
 import static mizdooni.controllers.ControllerUtils.PARAMS_MISSING;
 
 @RestController
-class ReviewController {
+public class ReviewController {
     @Autowired
     private RestaurantService restaurantService;
     @Autowired
