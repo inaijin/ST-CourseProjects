@@ -49,31 +49,45 @@ public class ReservationControllerTest {
     @BeforeEach
     public void setup() throws Exception {
         mocks = MockitoAnnotations.openMocks(this);
-
-        Method checkRestaurantMethod =
-                ControllerUtils.class.getDeclaredMethod("checkRestaurant", int.class, RestaurantService.class);
-        checkRestaurantMethod.setAccessible(true);
-
-        mockedControllerUtils = mockStatic(ControllerUtils.class);
-        mockedControllerUtils.when(() -> checkRestaurantMethod.invoke(null, anyInt(), any(RestaurantService.class)))
-                .thenReturn(null);
+        setupStaticMocks();
     }
 
     @AfterEach
     public void closeMocks() throws Exception {
-        Method checkRestaurantMethod =
-                ControllerUtils.class.getDeclaredMethod("checkRestaurant", int.class, RestaurantService.class);
-        checkRestaurantMethod.setAccessible(false);
-
+        resetStaticMocks();
         mocks.close();
         mockedControllerUtils.close();
     }
 
+    private void setupStaticMocks() throws Exception {
+        Method checkRestaurantMethod = ControllerUtils.class.getDeclaredMethod("checkRestaurant", int.class, RestaurantService.class);
+        checkRestaurantMethod.setAccessible(true);
+        mockedControllerUtils = mockStatic(ControllerUtils.class);
+        mockedControllerUtils.when(() -> checkRestaurantMethod.invoke(null, anyInt(), any(RestaurantService.class)))
+                .thenReturn(null);
+
+        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
+        containsKeysMethod.setAccessible(true);
+        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, any(Map.class), any(String[].class)))
+                .thenReturn(true);
+    }
+
+    private void resetStaticMocks() {
+        mockedControllerUtils.clearInvocations();
+    }
+
+    private Map<String, String> getDefaultParams() {
+        Map<String, String> params = new HashMap<>();
+        params.put("people", "4");
+        params.put("datetime", "2023-10-10 12:00");
+        return params;
+    }
+
     private void assertResponseMatches(Response expectedResponse, Response actualResponse) throws Exception {
-        assertEquals(getField(expectedResponse, "status"), getField(actualResponse, "status"), "Status field did not match!");
-        assertEquals(getField(expectedResponse, "message"), getField(actualResponse, "message"), "Message field did not match!");
-        assertEquals(getField(expectedResponse, "success"), getField(actualResponse, "success"), "Success field did not match!");
-        assertEquals(getField(expectedResponse, "data"), getField(actualResponse, "data"), "Data field did not match!");
+        assertEquals(getField(expectedResponse, "status"), getField(actualResponse, "status"), "Status field mismatch");
+        assertEquals(getField(expectedResponse, "message"), getField(actualResponse, "message"), "Message field mismatch");
+        assertEquals(getField(expectedResponse, "success"), getField(actualResponse, "success"), "Success field mismatch");
+        assertEquals(getField(expectedResponse, "data"), getField(actualResponse, "data"), "Data field mismatch");
     }
 
     private Object getField(Object object, String fieldName) throws Exception {
@@ -220,18 +234,10 @@ public class ReservationControllerTest {
     @DisplayName("Test addReservation with valid parameters")
     public void testAddReservationSuccess() throws Exception {
         int restaurantId = 1;
-        Map<String, String> params = new HashMap<>();
-        params.put("people", "4");
-        params.put("datetime", "2023-10-10 12:00");
+        Map<String, String> params = getDefaultParams();
 
         LocalDateTime datetime = LocalDateTime.parse(params.get("datetime"), DATETIME_FORMATTER);
         Reservation reservation = new Reservation(null, null, null, datetime);
-
-        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
-        containsKeysMethod.setAccessible(true);
-
-        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, params, new String[]{"people", "datetime"})).thenReturn(true);
-        containsKeysMethod.setAccessible(false);
 
         when(reservationService.reserveTable(restaurantId, 4, datetime)).thenReturn(reservation);
 
@@ -244,9 +250,14 @@ public class ReservationControllerTest {
 
     @Test
     @DisplayName("Test addReservation with missing parameters")
-    public void testAddReservationMissingParams() {
+    public void testAddReservationMissingParams() throws NoSuchMethodException {
         int restaurantId = 1;
         Map<String, String> params = new HashMap<>();
+
+        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
+        containsKeysMethod.setAccessible(true);
+        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, any(Map.class), any(String[].class)))
+                .thenReturn(false);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             reservationController.addReservation(restaurantId, params);
@@ -257,22 +268,16 @@ public class ReservationControllerTest {
     }
 
     @Test
-    @DisplayName("Test addReservation with invalid parameters")
-    public void testAddReservationParamsBadType() throws NoSuchMethodException {
+    @DisplayName("Test addReservation with invalid parameters (PARAMS_BAD_TYPE)")
+    public void testAddReservationParamsBadType() {
         int restaurantId = 1;
         Map<String, String> params = new HashMap<>();
         params.put("people", "invalid");
         params.put("datetime", "invalid-date");
 
-        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
-        containsKeysMethod.setAccessible(true);
-
-        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, params, new String[]{"people", "datetime"})).thenReturn(true);
-        containsKeysMethod.setAccessible(false);
-
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             reservationController.addReservation(restaurantId, params);
-        });
+        }, "Expected ResponseException for invalid parameter format");
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(PARAMS_BAD_TYPE, exception.getMessage());
