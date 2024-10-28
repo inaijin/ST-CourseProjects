@@ -6,7 +6,6 @@ import mizdooni.model.Address;
 import mizdooni.model.User;
 import mizdooni.response.Response;
 import mizdooni.response.ResponseException;
-import mizdooni.service.ServiceUtils;
 import mizdooni.service.UserService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 
@@ -34,18 +32,15 @@ public class AuthenticationControllerTest {
     private AuthenticationController authenticationController;
 
     private AutoCloseable mocks;
-    private MockedStatic<ServiceUtils> mockedServiceUtils;
 
     @BeforeEach
     public void setup() {
         mocks = MockitoAnnotations.openMocks(this);
-        mockedServiceUtils = mockStatic(ServiceUtils.class);
     }
 
     @AfterEach
     public void closeMocks() throws Exception {
         mocks.close();
-        mockedServiceUtils.close();
     }
 
     private Object getField(Object object, String fieldName) throws Exception {
@@ -120,7 +115,7 @@ public class AuthenticationControllerTest {
 
     @Test
     @DisplayName("Test invalid login credentials")
-    public void testLoginInvalidCredentials() throws Exception {
+    public void testLoginInvalidCredentials() {
         Map<String, String> invalidLoginParams = new HashMap<>();
         invalidLoginParams.put("username", "invalidUser");
         invalidLoginParams.put("password", "wrongPass");
@@ -145,6 +140,7 @@ public class AuthenticationControllerTest {
             authenticationController.login(params);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(ControllerUtils.PARAMS_MISSING, exception.getMessage());
     }
@@ -193,7 +189,7 @@ public class AuthenticationControllerTest {
 
     @Test
     @DisplayName("Test signup with missing parameters")
-    public void testSignupWithMissingParams() throws Exception {
+    public void testSignupWithMissingParams() {
         Map<String, Object> params = new HashMap<>();
         params.put("username", "newUser");
 
@@ -201,13 +197,14 @@ public class AuthenticationControllerTest {
             authenticationController.signup(params);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(ControllerUtils.PARAMS_MISSING, exception.getMessage());
     }
 
     @Test
     @DisplayName("Test signup with invalid parameter types")
-    public void testSignupWithInvalidParamTypes() throws Exception {
+    public void testSignupWithInvalidParamTypes() {
         Map<String, Object> params = new HashMap<>();
         params.put("username", "newUser");
         params.put("password", "password");
@@ -220,13 +217,14 @@ public class AuthenticationControllerTest {
             authenticationController.signup(params);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(ControllerUtils.PARAMS_BAD_TYPE, exception.getMessage());
     }
 
     @Test
     @DisplayName("Test signup with missing values in parameters")
-    public void testSignupWithMissingValues() throws Exception {
+    public void testSignupWithMissingValues() {
         Map<String, Object> params = new HashMap<>();
         params.put("username", "newUser");
         params.put("password", "password");
@@ -242,6 +240,7 @@ public class AuthenticationControllerTest {
             authenticationController.signup(params);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(ControllerUtils.PARAMS_MISSING, exception.getMessage());
     }
@@ -272,6 +271,13 @@ public class AuthenticationControllerTest {
             authenticationController.signup(params);
         });
 
+        verify(userService).signup(
+                eq("newUser"),
+                eq("password"),
+                eq("email@example.com"),
+                argThat(addr -> addr.getCountry().equals("Country") && addr.getCity().equals("City")),
+                eq(User.Role.client)
+        );
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Service failure", exception.getMessage());
     }
@@ -307,12 +313,11 @@ public class AuthenticationControllerTest {
     public void testInvalidUsernameFormat() {
         String invalidUsername = "invalid username";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(invalidUsername)).thenReturn(false);
-
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             authenticationController.validateUsername(invalidUsername);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("invalid username format", exception.getMessage());
     }
@@ -322,13 +327,13 @@ public class AuthenticationControllerTest {
     public void testUsernameAlreadyExists() {
         String existingUsername = "existingUser";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(existingUsername)).thenReturn(true);
         when(userService.usernameExists(existingUsername)).thenReturn(true);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             authenticationController.validateUsername(existingUsername);
         });
 
+        verify(userService).usernameExists(existingUsername);
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals("username already exists", exception.getMessage());
     }
@@ -338,12 +343,10 @@ public class AuthenticationControllerTest {
     public void testUsernameIsAvailable() throws Exception {
         String newUsername = "newUser";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateUsername(newUsername)).thenReturn(true);
-        when(userService.usernameExists(newUsername)).thenReturn(false);
-
         Response response = authenticationController.validateUsername(newUsername);
         Response expectedResponse = Response.ok("username is available");
 
+        verify(userService).usernameExists(newUsername);
         assertResponseMatches(expectedResponse, response);
     }
 
@@ -352,12 +355,11 @@ public class AuthenticationControllerTest {
     public void testInvalidEmailFormat() {
         String invalidEmail = "invalid.email@";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(invalidEmail)).thenReturn(false);
-
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             authenticationController.validateEmail(invalidEmail);
         });
 
+        verifyNoInteractions(userService);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("invalid email format", exception.getMessage());
     }
@@ -367,13 +369,13 @@ public class AuthenticationControllerTest {
     public void testEmailAlreadyRegistered() {
         String registeredEmail = "registered@example.com";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(registeredEmail)).thenReturn(true);
         when(userService.emailExists(registeredEmail)).thenReturn(true);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             authenticationController.validateEmail(registeredEmail);
         });
 
+        verify(userService).emailExists(registeredEmail);
         assertEquals(HttpStatus.CONFLICT, exception.getStatus());
         assertEquals("email already registered", exception.getMessage());
     }
@@ -383,12 +385,10 @@ public class AuthenticationControllerTest {
     public void testEmailNotRegistered() throws Exception {
         String newEmail = "newuser@example.com";
 
-        mockedServiceUtils.when(() -> ServiceUtils.validateEmail(newEmail)).thenReturn(true);
-        when(userService.emailExists(newEmail)).thenReturn(false);
-
         Response response = authenticationController.validateEmail(newEmail);
         Response expectedResponse = Response.ok("email not registered");
 
+        verify(userService).emailExists(newEmail);
         assertResponseMatches(expectedResponse, response);
     }
 }

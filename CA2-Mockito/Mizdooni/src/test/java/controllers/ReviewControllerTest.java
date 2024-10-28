@@ -1,5 +1,36 @@
 package controllers;
 
+import mizdooni.controllers.ReviewController;
+import mizdooni.exceptions.RestaurantNotFound;
+import mizdooni.model.Rating;
+import mizdooni.model.Restaurant;
+import mizdooni.model.Review;
+import mizdooni.response.PagedList;
+import mizdooni.response.Response;
+import mizdooni.response.ResponseException;
+import mizdooni.service.RestaurantService;
+import mizdooni.service.ReviewService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
+
+import java.lang.reflect.Field;
+import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static mizdooni.controllers.ControllerUtils.PARAMS_BAD_TYPE;
+import static mizdooni.controllers.ControllerUtils.PARAMS_MISSING;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
+
 import mizdooni.controllers.ControllerUtils;
 import mizdooni.controllers.ReviewController;
 import mizdooni.exceptions.RestaurantNotFound;
@@ -22,8 +53,6 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,22 +73,11 @@ public class ReviewControllerTest {
     private ReviewController reviewController;
 
     private AutoCloseable mocks;
-    private MockedStatic<ControllerUtils> mockedControllerUtils;
 
     @BeforeEach
     public void setup() throws Exception {
         mocks = MockitoAnnotations.openMocks(this);
-        setupStaticMocks();
-    }
 
-    @AfterEach
-    public void closeMocks() throws Exception {
-        resetStaticMocks();
-        mocks.close();
-        mockedControllerUtils.close();
-    }
-
-    private void setupStaticMocks() throws Exception {
         Restaurant mockRestaurant = new Restaurant(
                 "Mock Restaurant",
                 null,
@@ -76,20 +94,12 @@ public class ReviewControllerTest {
         idField.set(mockRestaurant, 0);
         idField.setAccessible(false);
 
-        Method checkRestaurantMethod = ControllerUtils.class.getDeclaredMethod("checkRestaurant", int.class, RestaurantService.class);
-        checkRestaurantMethod.setAccessible(true);
-        mockedControllerUtils = mockStatic(ControllerUtils.class);
-        mockedControllerUtils.when(() -> checkRestaurantMethod.invoke(null, anyInt(), any(RestaurantService.class)))
-                .thenReturn(mockRestaurant);
-
-        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
-        containsKeysMethod.setAccessible(true);
-        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, any(Map.class), any(String[].class)))
-                .thenReturn(true);
+        when(restaurantService.getRestaurant(0)).thenReturn(mockRestaurant);
     }
 
-    private void resetStaticMocks() {
-        mockedControllerUtils.clearInvocations();
+    @AfterEach
+    public void closeMocks() throws Exception {
+        mocks.close();
     }
 
     private Map<String, Object> getDefaultParams() {
@@ -131,6 +141,7 @@ public class ReviewControllerTest {
         Response response = reviewController.getReviews(restaurantId, page);
         Response expectedResponse = Response.ok("reviews for restaurant (0): Mock Restaurant", reviews);
 
+        verify(restaurantService).getRestaurant(restaurantId);
         verify(reviewService).getReviews(restaurantId, page);
         assertResponseMatches(expectedResponse, response);
     }
@@ -147,6 +158,8 @@ public class ReviewControllerTest {
             reviewController.getReviews(restaurantId, page);
         });
 
+        verify(restaurantService).getRestaurant(restaurantId);
+        verify(reviewService).getReviews(restaurantId, page);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Service failure", exception.getMessage());
     }
@@ -162,25 +175,23 @@ public class ReviewControllerTest {
         Response response = reviewController.addReview(restaurantId, params);
         Response expectedResponse = Response.ok("review added successfully");
 
+        verify(restaurantService).getRestaurant(restaurantId);
         verify(reviewService).addReview(eq(restaurantId), any(Rating.class), eq("Great food!"));
         assertResponseMatches(expectedResponse, response);
     }
 
     @Test
     @DisplayName("Test addReview with missing parameters")
-    public void testAddReviewMissingParams() throws NoSuchMethodException {
-        int restaurantId = 1;
+    public void testAddReviewMissingParams() {
+        int restaurantId = 0;
         Map<String, Object> params = new HashMap<>();
-
-        Method containsKeysMethod = ControllerUtils.class.getDeclaredMethod("containsKeys", Map.class, String[].class);
-        containsKeysMethod.setAccessible(true);
-        mockedControllerUtils.when(() -> containsKeysMethod.invoke(null, any(Map.class), any(String[].class)))
-                .thenReturn(false);
 
         ResponseException exception = assertThrows(ResponseException.class, () -> {
             reviewController.addReview(restaurantId, params);
         });
 
+        verifyNoInteractions(reviewService);
+        verify(restaurantService).getRestaurant(restaurantId);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(PARAMS_MISSING, exception.getMessage());
     }
@@ -188,7 +199,7 @@ public class ReviewControllerTest {
     @Test
     @DisplayName("Test addReview with invalid parameter types")
     public void testAddReviewParamsBadType() {
-        int restaurantId = 1;
+        int restaurantId = 0;
         Map<String, Object> params = new HashMap<>();
         params.put("comment", "Great food!");
         params.put("rating", "Invalid Rating");
@@ -197,6 +208,8 @@ public class ReviewControllerTest {
             reviewController.addReview(restaurantId, params);
         });
 
+        verifyNoInteractions(reviewService);
+        verify(restaurantService).getRestaurant(restaurantId);
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(PARAMS_BAD_TYPE, exception.getMessage());
     }
@@ -204,7 +217,7 @@ public class ReviewControllerTest {
     @Test
     @DisplayName("Test addReview when reviewService throws an exception")
     public void testAddReviewServiceException() throws Exception {
-        int restaurantId = 1;
+        int restaurantId = 0;
         Map<String, Object> params = getDefaultParams();
 
         doThrow(new RuntimeException("Review service failure")).when(reviewService).addReview(eq(restaurantId), any(Rating.class), eq("Great food!"));
@@ -213,6 +226,8 @@ public class ReviewControllerTest {
             reviewController.addReview(restaurantId, params);
         });
 
+        verify(restaurantService).getRestaurant(restaurantId);
+        verify(reviewService).addReview(eq(restaurantId), any(Rating.class), eq("Great food!"));
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Review service failure", exception.getMessage());
     }
