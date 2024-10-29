@@ -43,25 +43,12 @@ public class AuthenticationControllerTest {
         mocks.close();
     }
 
-    private Object getField(Object object, String fieldName) throws Exception {
-        Field field = object.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        Object receivedObj = field.get(object);
-        field.setAccessible(false);
-        return receivedObj;
-    }
-
-    private void assertResponseMatches(Response expectedResponse, Response actualResponse) throws Exception {
-        assertEquals(getField(expectedResponse, "status"), getField(actualResponse, "status"),
-                "Status field did not match!");
-        assertEquals(getField(expectedResponse, "message"), getField(actualResponse, "message"),
-                "Message field did not match!");
-        assertEquals(getField(expectedResponse, "success"), getField(actualResponse, "success"),
-                "Success field did not match!");
-        assertEquals(getField(expectedResponse, "data"), getField(actualResponse, "data"),
-                "Data field did not match!");
-        assertEquals(getField(expectedResponse, "error"), getField(actualResponse, "error"),
-                "Error field did not match!");
+    private void assertResponseMatches(Response expectedResponse, Response actualResponse) {
+        assertEquals(expectedResponse.getStatus(), actualResponse.getStatus(), "Status field did not match!");
+        assertEquals(expectedResponse.getMessage(), actualResponse.getMessage(), "Message field did not match!");
+        assertEquals(expectedResponse.getSuccess(), actualResponse.getSuccess(), "Success field did not match!");
+        assertEquals(expectedResponse.getData(), actualResponse.getData(), "Data field did not match!");
+        assertEquals(expectedResponse.getError(), actualResponse.getError(), "Error field did not match!");
     }
 
     @Test

@@ -30,6 +30,12 @@ public class Response {
         this.data = data;
     }
 
+    public HttpStatus getStatus() { return status; }
+    public String getMessage() { return message; }
+    public Boolean getSuccess() { return success; }
+    public Object getData() { return data; }
+    public String getError() { return error; }
+
     public static Response ok(String message) {
         return new Response(HttpStatus.OK, message, true, null, null);
     }
