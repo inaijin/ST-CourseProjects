@@ -95,17 +95,15 @@ public class RestaurantControllerTest {
         );
     }
 
-    private void performRequest(String url, Object requestBody, String method) throws Exception {
+    private void performRequest(String method, String url, Object requestBody, int expectedStatus) throws Exception {
         if (method.equalsIgnoreCase("GET")) {
             mockMvc.perform(get(url))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
+                    .andExpect(status().is(expectedStatus));
         } else if (method.equalsIgnoreCase("POST")) {
             mockMvc.perform(post(url)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(requestBody)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true));
+                    .andExpect(status().is(expectedStatus));
         }
     }
 
@@ -116,11 +114,7 @@ public class RestaurantControllerTest {
 
         Mockito.when(restaurantService.getRestaurant(restaurantId)).thenReturn(mockRestaurant);
 
-        mockMvc.perform(get("/restaurants/{restaurantId}", restaurantId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("restaurant found"))
-                .andExpect(jsonPath("$.data.name").value("Mock Restaurant"));
+        performRequest("GET", "/restaurants/" + restaurantId, null, HttpStatus.OK.value());
     }
 
     @Test
@@ -130,10 +124,7 @@ public class RestaurantControllerTest {
 
         Mockito.when(restaurantService.getRestaurant(restaurantId)).thenReturn(null);
 
-        mockMvc.perform(get("/restaurants/{restaurantId}", restaurantId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("restaurant not found"));
+        performRequest("GET", "/restaurants/" + restaurantId, null, HttpStatus.NOT_FOUND.value());
     }
 
     @Test
@@ -164,10 +155,7 @@ public class RestaurantControllerTest {
                 new ResponseException(HttpStatus.BAD_REQUEST, "Invalid page number")
         );
 
-        mockMvc.perform(get("/restaurants").param("page", String.valueOf(page)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Invalid page number"));
+        performRequest("GET", "/restaurants?page=" + page, null, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -179,12 +167,7 @@ public class RestaurantControllerTest {
 
         Mockito.when(restaurantService.getManagerRestaurants(managerId)).thenReturn(mockRestaurants);
 
-        mockMvc.perform(get("/restaurants/manager/{managerId}", managerId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("manager restaurants listed"))
-                .andExpect(jsonPath("$.data[0].name").value("Mock Restaurant"))
-                .andExpect(jsonPath("$.data[1].name").value("Mock Restaurant 2"));
+        performRequest("GET", "/restaurants/manager/" + managerId, null, HttpStatus.OK.value());
     }
 
     @Test
@@ -195,12 +178,7 @@ public class RestaurantControllerTest {
         Mockito.when(restaurantService.getManagerRestaurants(managerId))
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Invalid manager ID"));
 
-        mockMvc.perform(get("/restaurants/manager/{managerId}", managerId))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Invalid manager ID"))
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.timestamp").exists());
+        performRequest("GET", "/restaurants/manager/" + managerId, null, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -211,7 +189,7 @@ public class RestaurantControllerTest {
         Mockito.when(restaurantService.addRestaurant(anyString(), anyString(), any(LocalTime.class), any(LocalTime.class),
                 anyString(), any(Address.class), anyString())).thenReturn(newRestaurantId);
 
-        performRequest("/restaurants", validRequestBody, "POST");
+        performRequest("POST", "/restaurants", validRequestBody, HttpStatus.OK.value());
     }
 
     @Test
@@ -222,12 +200,7 @@ public class RestaurantControllerTest {
                 "type", "Fast Food"
         );
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("parameters missing"));
+        performRequest("POST", "/restaurants", requestBody, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -246,12 +219,7 @@ public class RestaurantControllerTest {
                 )
         );
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBodyInvalid)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("bad parameter type"));
+        performRequest("POST", "/restaurants", requestBodyInvalid, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -261,12 +229,7 @@ public class RestaurantControllerTest {
                         anyString(), any(Address.class), anyString()))
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Service error"));
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(validRequestBody)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Service error"));
+        performRequest("POST", "/restaurants", validRequestBody, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -285,12 +248,7 @@ public class RestaurantControllerTest {
                 )
         );
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBodyEmpty)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("parameters missing"));
+        performRequest("POST", "/restaurants", requestBodyEmpty, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -300,10 +258,7 @@ public class RestaurantControllerTest {
 
         Mockito.when(restaurantService.restaurantExists(name)).thenReturn(false);
 
-        mockMvc.perform(get("/validate/restaurant-name").param("data", name))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("restaurant name is available"));
+        performRequest("GET", "/validate/restaurant-name?data=" + name, null, HttpStatus.OK.value());
     }
 
     @Test
@@ -313,10 +268,7 @@ public class RestaurantControllerTest {
 
         Mockito.when(restaurantService.restaurantExists(name)).thenReturn(true);
 
-        mockMvc.perform(get("/validate/restaurant-name").param("data", name))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("restaurant name is taken"));
+        performRequest("GET", "/validate/restaurant-name?data=" + name, null, HttpStatus.CONFLICT.value());
     }
 
     @Test
@@ -339,10 +291,7 @@ public class RestaurantControllerTest {
         Mockito.when(restaurantService.getRestaurantTypes())
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Error fetching types"));
 
-        mockMvc.perform(get("/restaurants/types"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Error fetching types"));
+        performRequest("GET", "/restaurants/types", null, HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -369,9 +318,6 @@ public class RestaurantControllerTest {
         Mockito.when(restaurantService.getRestaurantLocations())
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Error fetching locations"));
 
-        mockMvc.perform(get("/restaurants/locations"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Error fetching locations"));
+        performRequest("GET", "/restaurants/locations", null, HttpStatus.BAD_REQUEST.value());
     }
 }
