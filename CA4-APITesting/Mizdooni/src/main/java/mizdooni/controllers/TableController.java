@@ -16,7 +16,7 @@ import static mizdooni.controllers.ControllerUtils.PARAMS_BAD_TYPE;
 import static mizdooni.controllers.ControllerUtils.PARAMS_MISSING;
 
 @RestController
-class TableController {
+public class TableController {
     @Autowired
     private RestaurantService restaurantService;
     @Autowired
@@ -42,7 +42,7 @@ class TableController {
 
         int seatsNumber;
         try {
-            seatsNumber = Integer.parseInt(params.get("seatNumber"));
+            seatsNumber = Integer.parseInt(params.get("seatsNumber"));
         } catch (Exception ex) {
             throw new ResponseException(HttpStatus.BAD_REQUEST, PARAMS_BAD_TYPE);
         }
