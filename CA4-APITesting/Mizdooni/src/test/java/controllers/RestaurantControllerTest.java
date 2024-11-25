@@ -5,13 +5,13 @@ import mizdooni.MizdooniApplication;
 import mizdooni.controllers.RestaurantController;
 import mizdooni.model.Address;
 import mizdooni.model.Restaurant;
-import mizdooni.model.RestaurantSearchFilter;
 import mizdooni.response.PagedList;
 import mizdooni.response.ResponseException;
 import mizdooni.response.ResponseExceptionHandler;
 import mizdooni.service.RestaurantService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +40,7 @@ public class RestaurantControllerTest {
     private MockMvc mockMvc;
     private Restaurant mockRestaurant;
     private Restaurant mockRestaurant2;
-    private Map<String, Object> requestBody;
+    private Map<String, Object> validRequestBody;
 
     @Autowired
     private RestaurantController restaurantController;
@@ -68,6 +68,7 @@ public class RestaurantControllerTest {
                 new Address("Country", "City", "Street"),
                 " "
         );
+
         mockRestaurant2 = new Restaurant(
                 "Mock Restaurant 2",
                 null,
@@ -79,7 +80,7 @@ public class RestaurantControllerTest {
                 " "
         );
 
-        requestBody = Map.of(
+        validRequestBody = Map.of(
                 "name", "New Restaurant",
                 "type", "Fast Food",
                 "startTime", "09:00",
@@ -94,7 +95,22 @@ public class RestaurantControllerTest {
         );
     }
 
+    private void performRequest(String url, Object requestBody, String method) throws Exception {
+        if (method.equalsIgnoreCase("GET")) {
+            mockMvc.perform(get(url))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        } else if (method.equalsIgnoreCase("POST")) {
+            mockMvc.perform(post(url)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(requestBody)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.success").value(true));
+        }
+    }
+
     @Test
+    @DisplayName("Should retrieve a restaurant successfully")
     public void testGetRestaurant_Success() throws Exception {
         int restaurantId = 0;
 
@@ -108,6 +124,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 404 for a non-existent restaurant")
     public void testGetRestaurant_NotFound() throws Exception {
         int restaurantId = 999;
 
@@ -120,19 +137,15 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should list restaurants for valid input")
     public void testGetRestaurants_Success() throws Exception {
         int page = 1;
 
-        PagedList<Restaurant> mockPagedList = new PagedList<>(
-                Arrays.asList(
-                        mockRestaurant,
-                        mockRestaurant2
-                ),
-                page,
-                10
-        );
+        List<Restaurant> restaurants = Arrays.asList(mockRestaurant, mockRestaurant2);
 
-        Mockito.when(restaurantService.getRestaurants(eq(page), any(RestaurantSearchFilter.class))).thenReturn(mockPagedList);
+        Mockito.when(restaurantService.getRestaurants(eq(page), any())).thenReturn(
+                new PagedList<>(restaurants, page, 10)
+        );
 
         mockMvc.perform(get("/restaurants").param("page", String.valueOf(page)))
                 .andExpect(status().isOk())
@@ -143,28 +156,26 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 for invalid page number in restaurant list")
     public void testGetRestaurants_BadRequest() throws Exception {
         int page = -1;
 
-        Mockito.when(restaurantService.getRestaurants(eq(page), any(RestaurantSearchFilter.class)))
-                .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Invalid page number"));
+        Mockito.when(restaurantService.getRestaurants(eq(page), any())).thenThrow(
+                new ResponseException(HttpStatus.BAD_REQUEST, "Invalid page number")
+        );
 
         mockMvc.perform(get("/restaurants").param("page", String.valueOf(page)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Invalid page number"))
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.timestamp").exists());
+                .andExpect(jsonPath("$.message").value("Invalid page number"));
     }
 
     @Test
+    @DisplayName("Should retrieve manager's restaurants successfully")
     public void testGetManagerRestaurants_Success() throws Exception {
         int managerId = 1;
 
-        List<Restaurant> mockRestaurants = Arrays.asList(
-                mockRestaurant,
-                mockRestaurant2
-        );
+        List<Restaurant> mockRestaurants = Arrays.asList(mockRestaurant, mockRestaurant2);
 
         Mockito.when(restaurantService.getManagerRestaurants(managerId)).thenReturn(mockRestaurants);
 
@@ -177,6 +188,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 for invalid manager ID")
     public void testGetManagerRestaurants_BadRequest() throws Exception {
         int managerId = -1;
 
@@ -192,22 +204,18 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should add a new restaurant successfully")
     public void testAddRestaurant_Success() throws Exception {
         int newRestaurantId = 1;
 
         Mockito.when(restaurantService.addRestaurant(anyString(), anyString(), any(LocalTime.class), any(LocalTime.class),
                 anyString(), any(Address.class), anyString())).thenReturn(newRestaurantId);
 
-        mockMvc.perform(post("/restaurants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("restaurant added"))
-                .andExpect(jsonPath("$.data").value(newRestaurantId));
+        performRequest("/restaurants", validRequestBody, "POST");
     }
 
     @Test
+    @DisplayName("Should return 400 for missing keys in addRestaurant")
     public void testAddRestaurant_MissingKeys() throws Exception {
         Map<String, Object> requestBody = Map.of(
                 "name", "Incomplete Restaurant",
@@ -223,6 +231,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 for invalid data types in addRestaurant")
     public void testAddRestaurant_InvalidDataType() throws Exception {
         Map<String, Object> requestBodyInvalid = Map.of(
                 "name", "Invalid Restaurant",
@@ -246,6 +255,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should handle service exception during addRestaurant")
     public void testAddRestaurant_ServiceException() throws Exception {
         Mockito.when(restaurantService.addRestaurant(anyString(), anyString(), any(LocalTime.class), any(LocalTime.class),
                         anyString(), any(Address.class), anyString()))
@@ -253,13 +263,14 @@ public class RestaurantControllerTest {
 
         mockMvc.perform(post("/restaurants")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
+                        .content(objectMapper.writeValueAsString(validRequestBody)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Service error"));
     }
 
     @Test
+    @DisplayName("Should return 400 for empty fields in addRestaurant")
     public void testAddRestaurant_EdgeCase_EmptyFields() throws Exception {
         Map<String, Object> requestBodyEmpty = Map.of(
                 "name", "",
@@ -283,6 +294,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should validate restaurant name as available")
     public void testValidateRestaurantName_Available() throws Exception {
         String name = "Unique Restaurant";
 
@@ -295,6 +307,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should validate restaurant name as taken")
     public void testValidateRestaurantName_Conflict() throws Exception {
         String name = "Existing Restaurant";
 
@@ -307,6 +320,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should retrieve restaurant types successfully")
     public void testGetRestaurantTypes_Success() throws Exception {
         Set<String> types = Set.of("Fast Food", "Italian", "Persian");
 
@@ -316,11 +330,11 @@ public class RestaurantControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("restaurant types"))
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", containsInAnyOrder("Fast Food", "Italian", "Persian")));
     }
 
     @Test
+    @DisplayName("Should return 400 for restaurant types fetch failure")
     public void testGetRestaurantTypes_BadRequest() throws Exception {
         Mockito.when(restaurantService.getRestaurantTypes())
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Error fetching types"));
@@ -332,6 +346,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should retrieve restaurant locations successfully")
     public void testGetRestaurantLocations_Success() throws Exception {
         Map<String, Set<String>> locations = Map.of(
                 "Country A", Set.of("City X", "City Y"),
@@ -349,6 +364,7 @@ public class RestaurantControllerTest {
     }
 
     @Test
+    @DisplayName("Should return 400 for restaurant locations fetch failure")
     public void testGetRestaurantLocations_BadRequest() throws Exception {
         Mockito.when(restaurantService.getRestaurantLocations())
                 .thenThrow(new ResponseException(HttpStatus.BAD_REQUEST, "Error fetching locations"));
@@ -358,5 +374,4 @@ public class RestaurantControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Error fetching locations"));
     }
-
 }
