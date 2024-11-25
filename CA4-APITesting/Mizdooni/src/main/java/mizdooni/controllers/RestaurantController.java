@@ -19,7 +19,7 @@ import java.util.Set;
 import static mizdooni.controllers.ControllerUtils.*;
 
 @RestController
-class RestaurantController {
+public class RestaurantController {
     @Autowired
     private RestaurantService restaurantService;
 
