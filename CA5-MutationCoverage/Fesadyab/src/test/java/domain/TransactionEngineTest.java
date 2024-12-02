@@ -34,7 +34,6 @@ public class TransactionEngineTest {
 
         txn3 = new Transaction();
         setUpTransaction(txn3, 3, 1500, true);
-
     }
 
     @Test
@@ -131,6 +130,20 @@ public class TransactionEngineTest {
         engine.addTransactionAndDetectFraud(txn3);
 
         assertEquals(1000, engine.getTransactionPatternAboveThreshold(1000));
+    }
+
+    @Test
+    @DisplayName("Should handle exact and boundary values for threshold")
+    public void testThresholdBoundaryValues() {
+        txn1.setAmount(1000);
+        txn2.setAmount(999);
+        txn3.setAmount(1001);
+
+        engine.addTransactionAndDetectFraud(txn1);
+        engine.addTransactionAndDetectFraud(txn2);
+        engine.addTransactionAndDetectFraud(txn3);
+
+        assertEquals(1, engine.getTransactionPatternAboveThreshold(1000));
     }
 
     @Test
@@ -241,9 +254,16 @@ public class TransactionEngineTest {
     }
 
     @Test
-    @DisplayName("Should return false when comparing Transaction with non-Transaction object")
-    public void testTransactionEquals_NonTransactionObject() {
-        String notATransaction = "Not a Transaction";
-        assertNotEquals(txn1, notATransaction);
+    @DisplayName("Should handle fraud detection at boundary")
+    public void testFraudDetectionBoundary() {
+        txn1.setAmount(500);
+        txn2.setAmount(1000);
+        txn3.setAmount(999);
+        txn3.setDebit(true);
+
+        engine.addTransactionAndDetectFraud(txn1);
+        assertEquals(0, engine.addTransactionAndDetectFraud(txn2));
+        assertEquals(0, engine.addTransactionAndDetectFraud(txn3));
     }
+
 }
