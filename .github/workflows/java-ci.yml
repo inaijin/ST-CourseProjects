@@ -32,3 +32,10 @@ jobs:
 
       - name: Run tests
         run: mvn test -f CA5-MutationCoverage/Fesadyab/pom.xml
+
+      - name: Upload Surefire reports
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: surefire-reports
+          path: CA5-MutationCoverage/Fesadyab/target/surefire-reports
