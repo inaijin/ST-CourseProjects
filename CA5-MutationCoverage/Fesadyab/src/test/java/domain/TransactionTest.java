@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TransactionTest {
-    int ACCOUNT_ID = 101;
+    int ACCOUNT_ID = 111;
     private Transaction txn1;
 
     private void setUpTransaction(Transaction transaction, int transID, int amount, Boolean debit) {
