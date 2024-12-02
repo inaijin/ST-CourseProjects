@@ -25,6 +25,15 @@ jobs:
           java-version: '21.0.2'
           distribution: 'temurin'
 
+      - name: Set up Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21.0.2'
+          distribution: 'temurin'
+          cache: maven
+          check-latest: true
+          maven-version: '3.9.4'
+
       - name: Build and Test with Maven
         run: mvn -B clean install -f CA5-MutationCoverage/Fesadyab/pom.xml
 
