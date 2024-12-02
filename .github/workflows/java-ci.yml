@@ -5,14 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'CA5-MutationCoverage/Fesadyab/src/**'
-      - 'CA5-MutationCoverage/Fesadyab/pom.xml'
+      - 'CA5-MutationCoverage/Fesadyab/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'CA5-MutationCoverage/Fesadyab/src/**'
-      - 'CA5-MutationCoverage/Fesadyab/pom.xml'
+      - 'CA5-MutationCoverage/Fesadyab/**'
 
 jobs:
   build:
@@ -27,15 +25,12 @@ jobs:
           java-version: '21.0.2'
           distribution: 'temurin'
 
-      - name: Build with Maven
-        run: mvn -B package -f CA5-MutationCoverage/Fesadyab/pom.xml
+      - name: Build and Test with Maven
+        run: mvn -B clean install -f CA5-MutationCoverage/Fesadyab/pom.xml
 
-      - name: Run tests
-        run: mvn test -f CA5-MutationCoverage/Fesadyab/pom.xml
-
-      - name: Upload Surefire reports
-        if: failure()
+      - name: Upload Test Reports
+        if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: surefire-reports
-          path: CA5-MutationCoverage/Fesadyab/target/surefire-reports
+          name: Test Reports
+          path: CA5-MutationCoverage/Fesadyab/target/surefire-reports/
