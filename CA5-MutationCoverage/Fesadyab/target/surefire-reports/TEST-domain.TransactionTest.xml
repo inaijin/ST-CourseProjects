@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="domain.TransactionEngineTest" time="0.012" tests="19" errors="0" skipped="0" failures="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report-3.0.xsd" version="3.0" name="domain.TransactionTest" time="0.022" tests="2" errors="0" skipped="0" failures="0">
   <properties>
     <property name="socksProxyHost" value="127.0.0.1"/>
     <property name="http.proxyHost" value="127.0.0.1"/>
@@ -63,23 +63,6 @@
     <property name="java.class.version" value="65.0"/>
     <property name="http.proxyPort" value="2080"/>
   </properties>
-  <testcase name="testAddTransactionAndDetectFraud_InconsistentPattern" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetAverageTransactionAmountByAccount_NoTransactions" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetAverageTransactionAmountByAccount_WithTransactions" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testDetectFraudulentTransaction_NoPreviousTransactions_NoExcessiveDebit" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_BreaksPattern" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_EmptyHistory" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_SingleTransaction" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testAddTransactionAndDetectFraud_PatternAboveThreshold" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_NoTransactionsAboveThreshold" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testFraudDetectionBoundary" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testAddTransactionAndDetectFraud_ExcessiveDebit" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testDetectFraudulentTransaction_DebitNotExceedingTwiceAverage" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testDetectFraudulentTransaction_NoPreviousTransactions_ExcessiveDebit" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testAddTransactionAndDetectFraud_DuplicateTransaction" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testAddTransactionAndDetectFraud_NoFraud" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_ConsistentPattern" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testThresholdBoundaryValues" classname="domain.TransactionEngineTest" time="0.0"/>
-  <testcase name="testGetTransactionPatternAboveThreshold_MultipleTransactionsSameId" classname="domain.TransactionEngineTest" time="0.001"/>
-  <testcase name="testGetAverageTransactionAmountByAccount_NoMatchingAccountId" classname="domain.TransactionEngineTest" time="0.0"/>
+  <testcase name="testTransactionGettersAndSetters" classname="domain.TransactionTest" time="0.012"/>
+  <testcase name="testTransactionEquals_NonTransactionObject" classname="domain.TransactionTest" time="0.002"/>
 </testsuite>
