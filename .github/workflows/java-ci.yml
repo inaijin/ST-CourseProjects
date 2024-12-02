@@ -2,15 +2,17 @@ name: Java CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'src/**'
-      - 'pom.xml'
+      - 'CA5-MutationCoverage/Fesadyab/src/**'
+      - 'CA5-MutationCoverage/Fesadyab/pom.xml'
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
     paths:
-      - 'src/**'
-      - 'pom.xml'
+      - 'CA5-MutationCoverage/Fesadyab/src/**'
+      - 'CA5-MutationCoverage/Fesadyab/pom.xml'
 
 jobs:
   build:
