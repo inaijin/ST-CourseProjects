@@ -43,3 +43,13 @@ jobs:
         with:
           name: Test Reports
           path: CA5-MutationCoverage/Fesadyab/target/surefire-reports/
+
+      - name: Run Mutation Coverage Analysis
+        run: mvn org.pitest:pitest-maven:mutationCoverage -f CA5-MutationCoverage/Fesadyab/pom.xml
+
+      - name: Upload Mutation Coverage Reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: Mutation Coverage Reports
+          path: CA5-MutationCoverage/Fesadyab/target/pit-reports/
