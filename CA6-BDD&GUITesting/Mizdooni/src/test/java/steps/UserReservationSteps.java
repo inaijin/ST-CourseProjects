@@ -16,6 +16,7 @@ public class UserReservationSteps {
     private User user;
     private Restaurant restaurant;
     private boolean reservationSuccess;
+    private Reservation lastReservation;
 
     @Given("a user with username {string} and role {string}")
     public void a_user_with_username_and_role(String username, String role) {
@@ -43,6 +44,7 @@ public class UserReservationSteps {
         restaurant.addTable(reservedTable);
         Reservation reservation = new Reservation(user, restaurant, reservedTable, LocalDateTime.parse(datetime));
         reservedTable.addReservation(reservation);
+        user.addReservation(reservation);
         assertTrue(reservedTable.isReserved(LocalDateTime.parse(datetime)));
     }
 
@@ -55,6 +57,7 @@ public class UserReservationSteps {
             Reservation reservation = new Reservation(user, restaurant, targetTable, LocalDateTime.parse(datetime));
             user.addReservation(reservation);
             targetTable.addReservation(reservation);
+            lastReservation = reservation;
             reservationSuccess = true;
         } else {
             reservationSuccess = false;
@@ -66,7 +69,7 @@ public class UserReservationSteps {
         the_user_reserves_table_in_at(tableNumber, datetime);
     }
 
-    @Then("the user should have {int} reservation")
+    @Then("the user should have {int} reservation(s)")
     public void the_user_should_have_reservation(int count) {
         assertEquals(count, user.getReservations().size());
     }
@@ -81,4 +84,16 @@ public class UserReservationSteps {
     public void the_reservation_should_fail() {
         assertFalse(reservationSuccess);
     }
+
+    @Then("the user should have {int} reservation\\(s)")
+    public void the_user_should_have_reservation_s(int count) {
+        assertEquals(count, user.getReservations().size());
+    }
+
+    @Then("the reservation number should be {int}")
+    public void the_reservation_number_should_be(int expectedReservationNumber) {
+        assertNotNull(lastReservation);
+        assertEquals(expectedReservationNumber, lastReservation.getReservationNumber());
+    }
+
 }
